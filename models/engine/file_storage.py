@@ -2,7 +2,7 @@
 """ Serializes instances to a json file """
 import json
 from models.base_model import BaseModel
-
+from models.user import User
 
 class FileStorage:
     """
@@ -41,7 +41,7 @@ class FileStorage:
             with open(FileStorage.__file_path, 'r') as fp:
                 objs = json.load(fp)
             for key,value in objs.items():
-                name, id_ = key.split('.')
+                name = key.split('.')[0]
                 class_ = eval(name)
                 self.__objects[key] = class_(**value)
         except FileNotFoundError:
