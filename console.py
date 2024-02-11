@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """ Contains the entry point of the command interpreter """
 import cmd
+import re
 from models.base_model import BaseModel
 from models.user import User
 from models.state import State
@@ -23,6 +24,28 @@ class HBNBCommand(cmd.Cmd):
     def emptyline(self):
         """ Do nothing if an empty is entered """
         pass
+    def default(self, arg):
+        """ Default behavior for console """
+        methods = {
+                "all": self.do_all,
+                "show": self.do_show,
+                "count": self.do_count,
+                "destroy": self.do_destroy,
+                "update": self.do_update
+                }
+        line = re.search(r"\.", arg)
+        if line is not None:
+            cls = arg[:line.span()[0]].strip()
+            method_args = arg[line.span()[1]:]
+            method_args_ = re.search(r"\((.*?)\)", method_args)
+            if method_args_ is not None:
+                method = method_args[:method_args_.start()]
+                args = method_args_.group(1).replace('"', '').replace(',','')
+            if cls in classes and method in methods:
+                call = f"{cls} {args}"
+                methods[method](call)
+            else:
+                print(f"** Unknown syntax: {arg}")
 
     @classmethod
     def line_check(self, arg):
@@ -86,7 +109,7 @@ class HBNBCommand(cmd.Cmd):
 
     def do_all(self, arg):
         """ Prints all string representaton of all instances """
-
+        arg = arg.strip()
         all_objs = storage.all()
         str_repr = ""
         if len(arg) == 0:
@@ -100,7 +123,8 @@ class HBNBCommand(cmd.Cmd):
                     cls = key.split(".")[0]
                     if cls == arg:
                         str_repr += str(value)
-                print(str_repr)
+        if len(str_repr) != 0:
+            print(str_repr)
 
     def do_update(self, arg):
         """ Updates an insance based on the class name and id """
@@ -128,6 +152,16 @@ class HBNBCommand(cmd.Cmd):
                     setattr(obj, attr_name, attr_value)
             except KeyError:
                 print("** no instance found **")
+
+    def do_count(self, arg):
+        """ Returns the number of instances of arg """
+        arg = arg.strip()
+        count = 0
+        for obj in storage.all().values():
+            if arg == obj.__class__.__name__:
+                count += 1
+        print(count)
+
 
 
 if __name__ == "__main__":
