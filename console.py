@@ -2,6 +2,7 @@
 """ Contains the entry point of the command interpreter """
 import cmd
 import re
+from shlex import split
 from models.base_model import BaseModel
 from models.user import User
 from models.state import State
@@ -24,6 +25,7 @@ class HBNBCommand(cmd.Cmd):
     def emptyline(self):
         """ Do nothing if an empty is entered """
         pass
+
     def default(self, arg):
         """ Default behavior for console """
         methods = {
@@ -40,7 +42,7 @@ class HBNBCommand(cmd.Cmd):
             method_args_ = re.search(r"\((.*?)\)", method_args)
             if method_args_ is not None:
                 method = method_args[:method_args_.start()]
-                args = method_args_.group(1).replace('"', '').replace(',','')
+                args = method_args_.group(1).replace('"', '').replace(',', '')
             if cls in classes and method in methods:
                 call = f"{cls} {args}"
                 methods[method](call)
@@ -57,6 +59,24 @@ class HBNBCommand(cmd.Cmd):
             print("** class doesn't exist **")
             return False
         return True
+
+    @classmethod
+    def parse(self, arg):
+        braces_search = re.search(r"\{(.*?)\}", arg)
+        brackets_search = re.search(r"\[(.*?)\]", arg)
+        if braces_search is None:
+            if brackets_search is None:
+                return [i.strip(",") for i in split(arg)]
+            else:
+                lexer = split(arg[:brackets_search.span()[0]])
+                retl = [i.strip(",") for i in lexer]
+                retl.append(brackets_search.group())
+                return retl
+        else:
+            lexer = split(arg[:braces_search.span()[0]])
+            ret_l = [i.strip(",") for i in lexer]
+            ret_l.append(braces_search.group())
+            return ret_l
 
     def do_quit(self, arg):
         'Quit command to exit the program\n'
@@ -126,33 +146,6 @@ class HBNBCommand(cmd.Cmd):
         if len(str_repr) != 0:
             print(str_repr)
 
-    def do_update(self, arg):
-        """ Updates an insance based on the class name and id """
-        args = arg.split(" ")
-        all_objs = storage.all()
-        cls = args[0]
-        id_ = args[1]
-        attr_name = args[2]
-        attr_value = args[3]
-        if len(cls) == 0:
-            print("** class name missing **")
-        elif cls not in classes:
-            print("** class doesn't exist **")
-        elif len(id_) == 0:
-            print("** instance id missing **")
-        else:
-            try:
-                key = f"{cls}.{id_}"
-                obj = all_objs[key]
-                if len(attr_name) == 0:
-                    print("** attribute name missing **")
-                elif len(attr_value) == 0:
-                    print(" ** value missing ***")
-                else:
-                    setattr(obj, attr_name, attr_value)
-            except KeyError:
-                print("** no instance found **")
-
     def do_count(self, arg):
         """ Returns the number of instances of arg """
         arg = arg.strip()
@@ -162,6 +155,51 @@ class HBNBCommand(cmd.Cmd):
                 count += 1
         print(count)
 
+    def do_update(self, arg):
+        """Usage: update <class> <id> <attribute_name> <attribute_value> or
+       <class>.update(<id>, <attribute_name>, <attribute_value>)"""
+        argl = self.parse(arg)
+        objdict = storage.all()
+
+        if len(argl) == 0:
+            print("** class name missing **")
+            return False
+        if argl[0] not in classes:
+            print("** class doesn't exist **")
+            return False
+        if len(argl) == 1:
+            print("** instance id missing **")
+            return False
+        if "{}.{}".format(argl[0], argl[1]) not in objdict.keys():
+            print("** no instance found **")
+            return False
+        if len(argl) == 2:
+            print("** attribute name missing **")
+            return False
+        if len(argl) == 3:
+            try:
+                type(eval(argl[2])) != dict
+            except NameError:
+                print("** value missing **")
+                return False
+
+        if len(argl) == 4:
+            obj = objdict["{}.{}".format(argl[0], argl[1])]
+            if argl[2] in obj.__class__.__dict__.keys():
+                valtype = type(obj.__class__.__dict__[argl[2]])
+                obj.__dict__[argl[2]] = valtype(argl[3])
+            else:
+                obj.__dict__[argl[2]] = argl[3]
+        elif type(eval(argl[2])) == dict:
+            obj = objdict["{}.{}".format(argl[0], argl[1])]
+            for k, v in eval(argl[2]).items():
+                if (k in obj.__class__.__dict__.keys() and
+                        type(obj.__class__.__dict__[k]) in {str, int, float}):
+                    valtype = type(obj.__class__.__dict__[k])
+                    obj.__dict__[k] = valtype(v)
+                else:
+                    obj.__dict__[k] = v
+        storage.save()
 
 
 if __name__ == "__main__":
