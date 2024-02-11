@@ -2,17 +2,28 @@
 """ Contains the entry point of the command interpreter """
 import cmd
 from models.base_model import BaseModel
+from models.user import User
+from models.state import State
+from models.city import City
+from models.amenity import Amenity
+from models.place import Place
+from models.review import Review
 from models.__init__ import storage
 
-classes = {"BaseModel": BaseModel, "User": User}
+
+classes = {"BaseModel": BaseModel, "User": User, "State": State,
+           "City": City, "Amenity": Amenity, "Place": Place,
+           "Review": Review}
+
 
 class HBNBCommand(cmd.Cmd):
     """ Command line interpreter for AirBnB """
-
     prompt = '(hbnb) '
+
     def emptyline(self):
         """ Do nothing if an empty is entered """
         pass
+
     @classmethod
     def line_check(self, arg):
         """ Checks for emptyline or class existing """
@@ -24,9 +35,10 @@ class HBNBCommand(cmd.Cmd):
             return False
         return True
 
-    def do_quit(self,arg):
+    def do_quit(self, arg):
         'Quit command to exit the program\n'
         return True
+
     def do_EOF(self, arg):
         'Quit the program also\n'
         return True
@@ -38,7 +50,7 @@ class HBNBCommand(cmd.Cmd):
             obj = cls()
             obj.save()
             print(obj.id)
-    
+
     def do_show(self, arg):
         """ Prints the string representation base on the class name and id """
         if len(arg) == 0:
@@ -71,7 +83,7 @@ class HBNBCommand(cmd.Cmd):
                     storage.save()
                 except KeyError:
                     print('** no instance found **')
-    
+
     def do_all(self, arg):
         """ Prints all string representaton of all instances """
 
@@ -109,13 +121,14 @@ class HBNBCommand(cmd.Cmd):
                 key = f"{cls}.{id_}"
                 obj = all_objs[key]
                 if len(attr_name) == 0:
-                    print ("** attribute name missing **")
+                    print("** attribute name missing **")
                 elif len(attr_value) == 0:
                     print(" ** value missing ***")
                 else:
                     setattr(obj, attr_name, attr_value)
             except KeyError:
                 print("** no instance found **")
+
 
 if __name__ == "__main__":
     HBNBCommand().cmdloop()

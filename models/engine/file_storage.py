@@ -3,6 +3,12 @@
 import json
 from models.base_model import BaseModel
 from models.user import User
+from models.state import State
+from models.city import City
+from models.amenity import Amenity
+from models.place import Place
+from models.review import Review
+
 
 class FileStorage:
     """
@@ -30,17 +36,17 @@ class FileStorage:
     def save(self):
         """serializes __objects to the JSON file (path: __file_path)"""
         json_objects = {}
-        for key,value  in self.__objects.items():
+        for key, value in self.__objects.items():
             json_objects[key] = value.to_dict()
         with open(self.__file_path, 'w') as f:
             json.dump(json_objects, f)
-            
+
     def reload(self):
         """ Deserialzes the hson file to __objects """
         try:
             with open(FileStorage.__file_path, 'r') as fp:
                 objs = json.load(fp)
-            for key,value in objs.items():
+            for key, value in objs.items():
                 name = key.split('.')[0]
                 class_ = eval(name)
                 self.__objects[key] = class_(**value)
